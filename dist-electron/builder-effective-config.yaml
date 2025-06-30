@@ -1,0 +1,54 @@
+directories:
+  output: dist-electron
+  buildResources: build
+appId: com.cinematicvideo.creator
+productName: Cinematic Video Creator
+files:
+  - filter:
+      - dist/**/*
+      - public/electron.js
+      - public/preload.js
+      - node_modules/**/*
+      - '!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}'
+      - '!node_modules/*/{test,__tests__,tests,powered-test,example,examples}'
+      - '!node_modules/*.d.ts'
+      - '!node_modules/.bin'
+      - '!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}'
+      - '!.editorconfig'
+      - '!**/._*'
+      - '!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}'
+      - '!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}'
+      - '!**/{appveyor.yml,.travis.yml,circle.yml}'
+      - '!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}'
+extraResources:
+  - from: node_modules/ffmpeg-static
+    to: ffmpeg
+    filter:
+      - '**/*'
+mac:
+  category: public.app-category.video
+  icon: assets/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.ico
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  icon: assets/icon.png
+  category: AudioVideo
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+electronVersion: 28.3.3

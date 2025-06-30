@@ -1,0 +1,111 @@
+name: Windows Build Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a release'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update browserslist database
+        run: npx update-browserslist-db@latest
+
+      - name: Build application
+        run: npm run build
+
+      - name: Build Windows desktop app
+        run: npm run dist-win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-${{ github.run_number }}
+          path: dist-electron/*.exe
+          retention-days: 30
+
+  create-release:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    if: github.event.inputs.create_release == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer-${{ github.run_number }}
+          path: ./windows-installer/
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.date.outputs.date }}-win-build${{ github.run_number }}
+          name: Cinematic Video Creator Windows v${{ steps.date.outputs.date }}
+          files: |
+            windows-installer/*
+          draft: false
+          prerelease: false
+          body: |
+            ## 🎬 Cinematic Video Creator - Windows Edition
+            
+            ### 📥 Download:
+            - **Windows 10/11**: Download file `.exe` dan jalankan sebagai administrator
+            
+            ### ✨ Fitur:
+            - ✅ Aplikasi desktop native untuk Windows
+            - ✅ Pemrosesan video dengan FFmpeg (sudah include)
+            - ✅ Support script parsing otomatis
+            - ✅ Audio synchronization
+            - ✅ Export ke MP4 berkualitas tinggi (1080p, 2K, 4K)
+            - ✅ Interface yang user-friendly
+            
+            ### 🚀 Cara Install:
+            1. **Download** file `Cinematic Video Creator Setup.exe`
+            2. **Klik kanan** → **"Run as administrator"**
+            3. **Ikuti** petunjuk instalasi
+            4. **Selesai!** Aplikasi siap digunakan
+            
+            ### 🔧 System Requirements:
+            - Windows 10/11 (64-bit)
+            - RAM: 4GB minimum (8GB recommended)
+            - Storage: 2GB free space
+            - .NET Framework (akan diinstall otomatis jika belum ada)
+            
+            ### 🐛 Troubleshooting:
+            - Jika ada error saat install, pastikan menjalankan sebagai administrator
+            - Jika Windows Defender memblokir, klik "More info" → "Run anyway"
+            - Jika aplikasi tidak bisa dibuka, restart komputer setelah install
+            
+            Build: ${{ github.run_number }} | Date: ${{ steps.date.outputs.date }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
